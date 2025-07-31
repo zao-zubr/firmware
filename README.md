@@ -17,8 +17,9 @@
 
 ## Замечания по установке программ под linux.
 1. Работает под ubuntu 22, возможно и более свежих
-2.
-sudo apt install libxcb-cursor0 libxcb-cursor-dev
+
+2. sudo apt install libxcb-cursor0 libxcb-cursor-dev
 sudo apt install libgl1-mesa-dev
+
 3. Добавить текущего пользователя linux в группу dialout
 sudo usermod -aG dialout username  # замените username на имя пользователя

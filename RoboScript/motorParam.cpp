@@ -21,7 +21,6 @@
       8  движок назначается подчиненным устройством и следует ШИМ-заданиям мастер-движка. Входящий ШИМ ИНВЕРТИРУЕТСЯ,
          а затем подается на ШИМ-формирователь. Вместе с режимом 7 обеспечивают любую установку подчиненного движка
       9  Регулятор позиции по углу с простой PD-формулой регулирования. Используется для RL.
-     10  Регулятор позиции по углу с простой PD-формулой регулирования. Используется для классической ходьбы. 
 
     В данном скрипте представлены функции, которые позволяют изменить режим одного или нескольких движков.
 
@@ -32,18 +31,18 @@
 // motorIndex - индекс мотора в конфигурации
 // mode       - код режима из описания в начале
 //Возвращает 1, если переключение произведено успешно или 0 в противном случае
-int changeMotorMode( int motorIndex, int mode ) {
+int changeMotorParam( int motorIndex, int paramIndex, int paramValue ) {
   //Получить текущий режим
-  int prevMode;
+  int prevValue;
   //Прочитаем текущий режим мотора
-  if( sfUnitParamRead( motorIndex, 4, &prevMode ) ) {
-    if( prevMode != mode ) {
+  if( sfUnitParamRead( motorIndex, paramIndex, &prevValue ) ) {
+    if( prevValue != paramValue ) {
       //Если текущий режим не соответствует требуемому, то перешиваем
-      if( sfUnitParamQueryWrite( motorIndex, 4, mode ) ) {
+      if( sfUnitParamQueryWrite( motorIndex, paramIndex, paramValue ) ) {
         sfWaitNextFrame();
         sfWaitNextFrame();
         //Режим записан, проверим как записалось
-        if( sfUnitParamRead( motorIndex, 4, &prevMode ) && prevMode == mode ) 
+        if( sfUnitParamRead( motorIndex, paramIndex, &prevValue ) && prevValue == paramValue ) 
           return 1;
         }
       }
@@ -58,7 +57,7 @@ int changeMotorMode( int motorIndex, int mode ) {
 // motorMask     - маска движков, режим которых нужно изменить
 // mode          - код режима из описания в начале
 // failMotorMask - маска движков, для которых не удалось изменить режим
-void changeMotorsMode( int motorMask, int mode, int *failMotorMask ) {
+void changeMotorsParam( int motorMask, int paramIndex, int paramValue, int *failMotorMask ) {
   int motorIndex;
   //Предполагаем, что все движки будут переключены успешно
   *failMotorMask = 0;
@@ -66,7 +65,7 @@ void changeMotorsMode( int motorMask, int mode, int *failMotorMask ) {
   for( motorIndex = 0; motorIndex < 31; motorIndex++ ) {
     //Если движок попадает в маску, то меняем его режим
     if( motorMask & (1 << motorIndex) ) {
-      if( !changeMotorMode( motorIndex, mode ) ) {
+      if( !changeMotorParam( motorIndex, paramIndex, paramValue ) ) {
         //Если изменить режим движка не удалось, то добавляем его в выходную маску
         *failMotorMask |= (1 << motorIndex);
         }
@@ -76,21 +75,24 @@ void changeMotorsMode( int motorMask, int mode, int *failMotorMask ) {
 
 
 int failMotorMask;
+
 int footMask;
-int handMask;
 
 void main() {
-  footMask = MASK_RIGHT_PELVIC | MASK_LEFT_PELVIC |//таз
-                     MASK_RIGHT_HIP_SIDE | MASK_LEFT_HIP_SIDE |//бедро вбок
-                     MASK_RIGHT_HIP | MASK_LEFT_HIP | //бедро
-                     MASK_RIGHT_KNEE | MASK_LEFT_KNEE | //колено
-                     MASK_RIGHT_FOOT_FRONT | MASK_LEFT_FOOT_FRONT | //стопа вперед
-                     MASK_RIGHT_FOOT_SIDE | MASK_LEFT_FOOT_SIDE | //стопа вбок
+  footMask = MASK_RIGHT_PELVIC | MASK_LEFT_PELVIC |//Правый таз
+                     MASK_RIGHT_HIP_SIDE | MASK_LEFT_HIP_SIDE |//Правое бедро вбок
+                     MASK_RIGHT_HIP | MASK_LEFT_HIP | //Правое бедро
+                     MASK_RIGHT_KNEE | MASK_LEFT_KNEE | //Правое колено
+                     MASK_RIGHT_FOOT_FRONT | MASK_LEFT_FOOT_FRONT | //Правая стопа вперед
+                     MASK_RIGHT_FOOT_SIDE | MASK_LEFT_FOOT_SIDE | //Правая стопа вбок
                      MASK_RIGHT_KNEE_BOT | MASK_LEFT_KNEE_BOT;
-  
-  handMask = MASK_LEFT_ELBOW | MASK_RIGHT_ELBOW | //Локоть
-             MASK_LEFT_CLAVICLE | MASK_RIGHT_CLAVICLE; //Ключица
-
-  changeMotorsMode( footMask | handMask, 10, &failMotorMask );
+  /*
+  changeMotorsParam( footMask, 4, 10, &failMotorMask );
+  */
+  changeMotorsParam( footMask, 717, 0, &failMotorMask );
+  if( failMotorMask == 0 ) {
+    sfPoseGroup( footMask, 0, 100 );
+    sfWaitFrame( 100 );
+    }
   sfStop();
   }

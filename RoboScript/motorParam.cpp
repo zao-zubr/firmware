@@ -21,8 +21,20 @@
       8  движок назначается подчиненным устройством и следует ШИМ-заданиям мастер-движка. Входящий ШИМ ИНВЕРТИРУЕТСЯ,
          а затем подается на ШИМ-формирователь. Вместе с режимом 7 обеспечивают любую установку подчиненного движка
       9  Регулятор позиции по углу с простой PD-формулой регулирования. Используется для RL.
+     10  Регулятор позиции по углу с простой PD-формулой регулирования. Используется для классической ходьбы. 
 
-    В данном скрипте представлены функции, которые позволяют изменить режим одного или нескольких движков.
+    В данном скрипте представлены функции, которые позволяют изменить режим параметр одного или нескольких движков.
+
+  Коэффициенты регуляторов представлены в целых числах, но они могут образовывать дробные коэффициенты по формуле:
+   дробный коэффициент = целый коэффициент / (2 в степени factor)
+
+  Индексы некоторых параметров:
+    4 - режим движка (регулятор)
+    параметры для PD регулятора 10
+    702 - KP
+    703 - FactorP
+    717 - KD
+    718 - FactorD
 
 */
 #include <roki2met.h>
@@ -77,8 +89,10 @@ void changeMotorsParam( int motorMask, int paramIndex, int paramValue, int *fail
 int failMotorMask;
 
 int footMask;
+int handMask;
 
 void main() {
+  //Маска ног
   footMask = MASK_RIGHT_PELVIC | MASK_LEFT_PELVIC |//Правый таз
                      MASK_RIGHT_HIP_SIDE | MASK_LEFT_HIP_SIDE |//Правое бедро вбок
                      MASK_RIGHT_HIP | MASK_LEFT_HIP | //Правое бедро
@@ -86,10 +100,24 @@ void main() {
                      MASK_RIGHT_FOOT_FRONT | MASK_LEFT_FOOT_FRONT | //Правая стопа вперед
                      MASK_RIGHT_FOOT_SIDE | MASK_LEFT_FOOT_SIDE | //Правая стопа вбок
                      MASK_RIGHT_KNEE_BOT | MASK_LEFT_KNEE_BOT;
+  
+  //Маска рук
+  handMask = MASK_LEFT_ELBOW | MASK_RIGHT_ELBOW | //Локоть
+             MASK_LEFT_CLAVICLE | MASK_RIGHT_CLAVICLE; //Ключица
+  
   /*
+  //Сменить режим на 10 для ног
   changeMotorsParam( footMask, 4, 10, &failMotorMask );
+
+  //Сменить параметр 702 (KP) для ног и рук
+  changeMotorsParam( footMask | handMask, 702, 400, &failMotorMask );
   */
-  changeMotorsParam( footMask, 717, 0, &failMotorMask );
+  
+  //Сменить параметр 702 (KP) только для ног
+  // актуально для робота, содержащего движки с 21-битным энкодером в ногах и с 14-битным энкодером в руках
+  changeMotorsParam( footMask, 702, 400, &failMotorMask );
+  
+  //Если смена произошла успешно, то напрягаем ноги робота
   if( failMotorMask == 0 ) {
     sfPoseGroup( footMask, 0, 100 );
     sfWaitFrame( 100 );
